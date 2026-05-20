@@ -36,27 +36,5 @@
         "tags": "geometry, proof"
       }
     ]
-  },
-  {
-    "subject_alias": "PHY",
-    "subject_name": "Physics",
-    "resources": [
-      {
-        "name": "Projectile Motion Simulator",
-        "category": "Mechanics",
-        "url": "https://phet.colorado.edu/sims/html/projectile-motion/latest/projectile-motion_all.html",
-        "description": "Launch projectiles with customizable velocity, launch angle, and mass to study parabolic trajectory dynamics.",
-        "theme": "#f59e0b",
-        "tags": "kinematics, gravity, phet"
-      },
-      {
-        "name": "Wave Interference Lab",
-        "category": "Waves & Optics",
-        "url": "https://phet.colorado.edu/sims/html/wave-interference/latest/wave-interference_all.html",
-        "description": "Study light, sound, and water waves. Manipulate frequency, amplitude, and double-slits to study interference patterns.",
-        "theme": "#d946ef",
-        "tags": "wave, optics, interference, phet"
-      }
-    ]
   }
 ]
