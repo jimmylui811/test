@@ -143,7 +143,7 @@
             $scope.loadDirectoryData = function() {
                 // Determine database filename dynamically based on subject parameter
                 const dbFile = $scope.targetSubjectParam 
-                    ? 'db-' + $scope.targetSubjectParam.toUpperCase() + '.json' 
+                    ? 'db-' + $scope.targetSubjectParam.toLowerCase() + '.json' 
                     : 'db.json';
 
                 $http.get(dbFile)
