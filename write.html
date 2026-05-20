@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-50" ng-app="cmsApp">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resource CMS Manager</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- AngularJS -->
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+    </style>
+</head>
+<body ng-controller="CmsController" class="h-full text-slate-800 bg-slate-50 flex flex-col">
+
+    <!-- Main Container -->
+    <div class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1">
+
+        <!-- Simple Header -->
+        <div class="mb-6 pb-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+                <h1 class="text-2xl font-bold tracking-tight text-slate-900">
+                    Mathematics — CMS Manager
+                </h1>
+                <p class="text-xs text-slate-500 mt-1">
+                    Configure your directory entries. Changes save automatically to your browser cache.
+                </p>
+            </div>
+            <div class="flex items-center gap-2">
+                <!-- Dynamic Status Badge -->
+                <span class="inline-flex items-center px-2.5 py-1.5 rounded-full text-xs font-semibold border"
+                      ng-class="isSandbox ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'">
+                    <span class="w-1.5 h-1.5 mr-1.5 rounded-full" ng-class="isSandbox ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500 animate-pulse'"></span>
+                    <span ng-bind="isSandbox ? 'Sandbox (Local Storage)' : 'Server Synced (directory_structure.json)'"></span>
+                </span>
+            </div>
+        </div>
+
+        <!-- Alert Notification Box -->
+        <div ng-show="toastMessage" class="mb-6 p-3 rounded-lg border text-sm flex items-center justify-between" 
+             ng-class="isError ? 'bg-red-50 border-red-200 text-red-800' : 'bg-emerald-50 border-emerald-200 text-emerald-800'">
+            <span ng-bind="toastMessage"></span>
+            <button ng-click="toastMessage = ''" class="font-bold hover:opacity-75">&times;</button>
+        </div>
+
+        <!-- Main Workspace Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- Left Panel: Form Control (Add / Edit) -->
+            <div class="lg:col-span-5">
+                <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-sm font-bold uppercase tracking-wider text-slate-400">
+                            {{ editIndex !== null ? '✏️ Edit Resource' : '➕ Add Resource' }}
+                        </h2>
+                        <button ng-show="editIndex !== null" ng-click="resetForm()" class="text-xs text-slate-500 hover:text-slate-800 font-semibold bg-slate-100 hover:bg-slate-200 px-2.5 py-1 rounded-md transition-colors">
+                            Cancel Edit
+                        </button>
+                    </div>
+
+                    <form ng-submit="saveResource()" class="space-y-4">
+                        <!-- Resource Name -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Resource Name</label>
+                            <input type="text" ng-model="form.name" required placeholder="e.g. Unit Circle Explorer" 
+                                   class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500 text-xs">
+                        </div>
+
+                        <!-- Resource Category -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Category</label>
+                            <input type="text" ng-model="form.category" required placeholder="e.g. Trigonometry" 
+                                   class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500 text-xs">
+                        </div>
+
+                        <!-- Destination URL -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Resource URL</label>
+                            <input type="url" ng-model="form.url" required placeholder="https://www.geogebra.org/m/..." 
+                                   class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500 text-xs">
+                        </div>
+
+                        <!-- Accent Color Theme and Tags -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Theme Color</label>
+                                <div class="flex items-center space-x-1.5">
+                                    <input type="color" ng-model="form.theme" class="w-8 h-8 p-0 border border-slate-200 rounded cursor-pointer shrink-0">
+                                    <input type="text" ng-model="form.theme" required placeholder="#0ea5e9" 
+                                           class="w-full px-2 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500 text-xs font-mono uppercase">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Tags (Comma Sep.)</label>
+                                <input type="text" ng-model="form.tags" placeholder="geometry, proof" 
+                                       class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500 text-xs">
+                            </div>
+                        </div>
+
+                        <!-- Resource Description -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Description</label>
+                            <textarea ng-model="form.description" required rows="3" placeholder="Explain what the learner can study or control using this page..." 
+                                      class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500 text-xs"></textarea>
+                        </div>
+
+                        <!-- Action Submit Button -->
+                        <button type="submit" class="w-full py-2 px-4 rounded-lg text-xs font-bold text-white transition-colors flex items-center justify-center space-x-1"
+                                ng-class="editIndex !== null ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-sky-600 hover:bg-sky-700'">
+                            <span>{{ editIndex !== null ? '✔ Update Resource' : '➕ Add Resource' }}</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Right Panel: Data Lists & Exporter -->
+            <div class="lg:col-span-7 space-y-6">
+                
+                <!-- Dynamic List of Active Items -->
+                <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-sm font-bold uppercase tracking-wider text-slate-400">
+                            Active Resources ({{resources.length}})
+                        </h2>
+                    </div>
+
+                    <!-- Scrollable items display -->
+                    <div class="divide-y divide-slate-100 max-h-60 overflow-y-auto pr-1">
+                        <div ng-repeat="res in resources" class="py-2.5 flex items-center justify-between group">
+                            <div class="flex items-center space-x-3.5 truncate max-w-[80%]">
+                                <div class="w-3 h-3 rounded-full flex-shrink-0" style="background-color: {{res.theme || '#0ea5e9'}};"></div>
+                                <div class="truncate">
+                                    <h4 class="text-xs font-bold text-slate-900 truncate" ng-bind="res.name"></h4>
+                                    <p class="text-[10px] text-slate-400 truncate" ng-bind="res.category + ' • ' + res.url"></p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <button ng-click="setEdit(res, $index)" class="text-xs bg-slate-50 hover:bg-slate-100 border border-slate-200 px-2 py-1 rounded transition-colors" title="Edit Item">
+                                    ✏️ Edit
+                                </button>
+                                <button ng-click="deleteResource($index)" class="text-xs bg-red-50 hover:bg-red-100 border border-red-100 text-red-600 px-2 py-1 rounded transition-colors" title="Delete Item">
+                                    🗑 Delete
+                                </button>
+                            </div>
+                        </div>
+
+                        <div ng-if="resources.length === 0" class="text-center py-8 text-slate-450 text-xs">
+                            No resources registered yet. Add resources on the left to populate the list!
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Database operations & Raw Output Area -->
+                <div class="bg-slate-900 text-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
+                    <div class="flex justify-between items-center">
+                        <h4 class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Database Preview: directory_structure.json</h4>
+                        
+                        <div class="flex items-center space-x-2">
+                            <button ng-click="copyJson()" class="px-2.5 py-1 text-[10px] font-bold bg-slate-800 hover:bg-slate-700 text-white rounded transition-colors">
+                                📋 Copy
+                            </button>
+                            <button ng-click="downloadJson()" class="px-2.5 py-1 text-[10px] font-bold bg-sky-950 hover:bg-sky-900 text-sky-400 rounded transition-colors">
+                                📥 Download
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Readonly output textarea -->
+                    <textarea id="json-editor" ng-model="rawJson" ng-change="applyRawJsonText()" rows="8" 
+                              class="font-mono text-[11px] w-full p-3.5 rounded-xl border border-slate-700 bg-slate-950 text-slate-300 focus:outline-none focus:ring-1 focus:ring-sky-500"></textarea>
+                    
+                    <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3 pt-2.5 border-t border-slate-800">
+                        <label class="cursor-pointer bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center space-x-1.5 transition-colors text-center justify-center">
+                            <span>📂 Upload JSON File</span>
+                            <input type="file" id="json-upload-input" class="hidden" accept=".json" onchange="angular.element(this).scope().uploadJsonFile(this)">
+                        </label>
+                        <span class="text-[10px] text-slate-500 text-center">Copy or download JSON to host in your directory folder.</span>
+                    </div>
+                </div>
+
+            </div>
+            
+        </div>
+
+    </div>
+
+    <!-- ANGULARJS SYSTEM CONTROLLER -->
+    <script>
+        const app = angular.module('cmsApp', []);
+
+        app.controller('CmsController', ['$scope', '$http', '$timeout', function($scope, $http, $timeout) {
+            
+            // Baseline default list configuration
+            $scope.mockResourcesFallback = [
+            ];
+
+            // Local state properties
+            $scope.resources = [];
+            $scope.editIndex = null;
+            $scope.toastMessage = '';
+            $scope.isError = false;
+            $scope.isSandbox = false;
+            
+            $scope.form = {
+                name: '',
+                category: '',
+                url: '',
+                theme: '#0ea5e9',
+                tags: '',
+                description: ''
+            };
+
+            // Setup utility notifications
+            $scope.showNotification = function(text, err = false) {
+                $scope.toastMessage = text;
+                $scope.isError = err;
+                
+                $timeout(function() {
+                    $scope.toastMessage = '';
+                }, 4000);
+            };
+
+            // Main Load routine attempting server connect first
+            $scope.loadData = function() {
+                $http.get('/api/resources')
+                    .then(function(response) {
+                        if (angular.isArray(response.data)) {
+                            $scope.resources = response.data;
+                            if ($scope.resources.length === 0) {
+                                $scope.resources = angular.copy($scope.mockResourcesFallback);
+                            }
+                            $scope.isSandbox = false;
+                            $scope.syncTextarea();
+                        } else {
+                            $scope.loadFromLocalStorage();
+                        }
+                    }, function(error) {
+                        $scope.loadFromLocalStorage();
+                    });
+            };
+
+            // Local fallback routine if API endpoint is down/offline
+            $scope.loadFromLocalStorage = function() {
+                $scope.isSandbox = true;
+                const localData = localStorage.getItem('directory_structure');
+                if (localData) {
+                    try {
+                        $scope.resources = JSON.parse(localData);
+                    } catch (e) {
+                        $scope.resources = angular.copy($scope.mockResourcesFallback);
+                    }
+                } else {
+                    $scope.resources = angular.copy($scope.mockResourcesFallback);
+                }
+                $scope.syncTextarea();
+            };
+
+            // Save state by sending a POST request directly to writing to local file, fallback to LocalStorage
+            $scope.saveState = function() {
+                $scope.syncTextarea();
+                
+                // Keep LocalStorage updated as local device backup
+                localStorage.setItem('directory_structure', JSON.stringify($scope.resources));
+
+                $http.post('/api/resources', $scope.resources)
+                    .then(function(response) {
+                        $scope.showNotification("Database synchronized and written to directory_structure.json!");
+                        $scope.isSandbox = false;
+                    }, function(error) {
+                        $scope.showNotification("Saved locally in cache. Setup server connection to write to file.", true);
+                        $scope.isSandbox = true;
+                    });
+            };
+
+            $scope.syncTextarea = function() {
+                $scope.rawJson = JSON.stringify($scope.resources, null, 2);
+            };
+
+            // Add or Edit resource submission controller
+            $scope.saveResource = function() {
+                const resourceItem = {
+                    name: $scope.form.name,
+                    category: $scope.form.category,
+                    url: $scope.form.url,
+                    theme: $scope.form.theme,
+                    tags: $scope.form.tags,
+                    description: $scope.form.description
+                };
+
+                if ($scope.editIndex !== null) {
+                    $scope.resources[$scope.editIndex] = resourceItem;
+                } else {
+                    $scope.resources.push(resourceItem);
+                }
+
+                $scope.saveState();
+                $scope.resetForm();
+            };
+
+            // Populate form fields to perform edits
+            $scope.setEdit = function(item, index) {
+                $scope.editIndex = index;
+                $scope.form = {
+                    name: item.name,
+                    category: item.category,
+                    url: item.url,
+                    theme: item.theme || '#0ea5e9',
+                    tags: item.tags || '',
+                    description: item.description
+                };
+            };
+
+            // Remove a resource from the dataset
+            $scope.deleteResource = function(index) {
+                if (confirm("Are you sure you want to delete this resource?")) {
+                    $scope.resources.splice(index, 1);
+                    $scope.saveState();
+                    if ($scope.editIndex === index) {
+                        $scope.resetForm();
+                    }
+                }
+            };
+
+            // Clean form inputs
+            $scope.resetForm = function() {
+                $scope.editIndex = null;
+                $scope.form = {
+                    name: '',
+                    category: '',
+                    url: '',
+                    theme: '#0ea5e9',
+                    tags: '',
+                    description: ''
+                };
+            };
+
+            // Live updates inside JSON text area
+            $scope.applyRawJsonText = function() {
+                try {
+                    const parsed = JSON.parse($scope.rawJson);
+                    if (angular.isArray(parsed)) {
+                        $scope.resources = parsed;
+                        localStorage.setItem('directory_structure', JSON.stringify($scope.resources));
+                        $scope.showNotification("JSON edits parsed in memory. Click any Action to write.");
+                    }
+                } catch(e) {
+                    // Do nothing, let user complete typing
+                }
+            };
+
+            // Copy active text array directly to clipboard
+            $scope.copyJson = function() {
+                const textarea = document.getElementById('json-editor');
+                textarea.select();
+                try {
+                    document.execCommand('copy');
+                    $scope.showNotification("JSON structure copied to clipboard!");
+                } catch (err) {
+                    $scope.showNotification("Unable to copy JSON context.", true);
+                }
+            };
+
+            // Trigger physical download of directory_structure.json configuration file
+            $scope.downloadJson = function() {
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify($scope.resources, null, 2));
+                const downloadAnchor = document.createElement('a');
+                downloadAnchor.setAttribute("href", dataStr);
+                downloadAnchor.setAttribute("download", "directory_structure.json");
+                document.body.appendChild(downloadAnchor);
+                downloadAnchor.click();
+                downloadAnchor.remove();
+                $scope.showNotification("Downloaded directory_structure.json!");
+            };
+
+            // Handle uploading a local JSON file directly to replace values
+            $scope.uploadJsonFile = function(element) {
+                const file = element.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const parsed = JSON.parse(e.target.result);
+                        if (!angular.isArray(parsed)) {
+                            $scope.$apply(function() {
+                                $scope.showNotification("Invalid file: Base entity must be a JSON array list.", true);
+                            });
+                            return;
+                        }
+                        $scope.$apply(function() {
+                            $scope.resources = parsed;
+                            $scope.saveState();
+                        });
+                        element.value = ''; // Clean input
+                    } catch(err) {
+                        $scope.$apply(function() {
+                            $scope.showNotification("Error parsing file structure.", true);
+                        });
+                    }
+                };
+                reader.readAsText(file);
+            };
+
+            // Run initial load
+            $scope.loadData();
+        }]);
+    </script>
+</body>
+</html>
