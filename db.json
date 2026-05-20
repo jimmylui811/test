@@ -30,5 +30,13 @@
     "description": "Interactive visual proof of geometric squares.",
     "theme": "#f43f5e",
     "tags": "geometry, proof"
+  },
+    {
+    "name": "Pythagoras Theorem Proof",
+    "category": "Geometry",
+    "url": "https://www.geogebra.org/m/vffpbyuz",
+    "description": "Interactive visual proof of geometric squares.",
+    "theme": "#f43f5e",
+    "tags": "geometry, proof"
   }
 ]
