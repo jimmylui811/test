@@ -26,9 +26,6 @@
                 <h1 class="text-2xl font-bold tracking-tight text-slate-900">
                     Mathematics — CMS Manager
                 </h1>
-                <p class="text-xs text-slate-500 mt-1">
-                    Configure your directory entries. Changes save automatically to your browser cache.
-                </p>
             </div>
             <div class="flex items-center gap-2">
                 <!-- Dynamic Status Badge -->
@@ -226,7 +223,7 @@
 
             // Main Load routine attempting server connect first
             $scope.loadData = function() {
-                $http.get('/')
+                $http.get('db.json')
                     .then(function(response) {
                         if (angular.isArray(response.data)) {
                             $scope.resources = response.data;
@@ -266,7 +263,7 @@
                 // Keep LocalStorage updated as local device backup
                 localStorage.setItem('db', JSON.stringify($scope.resources));
 
-                $http.post('/', $scope.resources)
+                $http.post('db.json', $scope.resources)
                     .then(function(response) {
                         $scope.showNotification("Database synchronized and written to db.json!");
                         $scope.isSandbox = false;
