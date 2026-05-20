@@ -233,12 +233,14 @@
                 return categories;
             };
 
-            // Calculate the total matching resources count
+            // Calculate the total matching resources count using the actively filtered dataset
             $scope.getMatchCount = function() {
                 let count = 0;
                 const filtered = $scope.getFilteredSubjects();
                 filtered.forEach(subj => {
-                    count += subj.resources.length;
+                    if (subj.resources) {
+                        count += subj.resources.length;
+                    }
                 });
                 return count;
             };
