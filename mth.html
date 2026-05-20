@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-50" ng-app="mathApp">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title ng-bind="getPageTitle()"></title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- AngularJS -->
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+    </style>
+</head>
+<body ng-controller="DirectoryController" class="h-full text-slate-800 bg-slate-50 flex flex-col">
+
+    <!-- Main Container -->
+    <div class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1">
+
+        <!-- Header Block with Dynamic Title & Status Badge -->
+        <div class="mb-6 pb-4 border-b border-slate-200 flex items-center justify-between gap-4">
+            <h1 class="text-2xl font-bold tracking-tight text-slate-900" ng-bind="getPageTitle()">
+                Academic Resources
+            </h1>
+            
+            <!-- Connection Status Badge -->
+            <div class="flex items-center shrink-0">
+                <span class="inline-flex items-center px-2.5 py-1.5 rounded-full text-[10px] sm:text-xs font-semibold border transition-all duration-300"
+                      ng-class="isSandbox ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'">
+                    <span class="w-1.5 h-1.5 mr-1.5 rounded-full" ng-class="isSandbox ? 'bg-amber-500' : 'bg-emerald-500 animate-pulse'"></span>
+                    <span ng-bind="isSandbox ? 'Sandbox (Offline/Error)' : 'Server Synced'"></span>
+                </span>
+            </div>
+        </div>
+
+        <!-- Filter & Search Panel -->
+        <div class="flex flex-col md:flex-row gap-4 justify-between items-stretch md:items-center bg-white p-3 rounded-xl border border-slate-200 mb-6">
+            <div class="relative flex-1 max-w-lg">
+                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs select-none">🔍</span>
+                <input type="text" ng-model="searchQuery" placeholder="Search resources..." 
+                       class="w-full pl-8 pr-4 py-2 rounded-lg border border-slate-200 bg-slate-50 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-sky-500 text-xs">
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <!-- Active tag filter indication -->
+                <div class="flex items-center space-x-1.5 text-xs font-semibold bg-slate-100 px-2 py-1 rounded-md text-slate-600" ng-show="selectedTagFilter">
+                    <span>Tag: <span class="text-sky-600 font-bold" ng-bind="selectedTagFilter"></span></span>
+                    <button ng-click="clearTagFilter()" class="hover:text-red-500 transition-colors font-bold text-sm leading-none pb-0.5">
+                        &times;
+                    </button>
+                </div>
+
+                <div class="text-xs text-slate-500 font-medium">
+                    Found <span class="font-bold text-slate-800" ng-bind="getMatchCount()">0</span> resources
+                </div>
+            </div>
+        </div>
+
+        <!-- LAYER 1 (Outermost): Grouped dynamically by Subject -->
+        <div ng-repeat="subject in getFilteredSubjects()" class="mb-10 animate-fade-in">
+            
+            <!-- Subject Header (only displays if viewing all subjects to keep single-subject views clean) -->
+            <div ng-if="!targetSubjectParam" class="flex items-center gap-2 mb-4 bg-slate-100/80 p-3 rounded-xl border border-slate-200/50">
+                <span class="bg-slate-800 text-white text-[10px] tracking-wider font-mono font-bold px-2 py-1 rounded" ng-bind="subject.subject_alias"></span>
+                <h2 class="text-sm font-bold text-slate-900" ng-bind="subject.subject_name"></h2>
+            </div>
+            
+            <!-- LAYER 2: Grouped by Category under Subject -->
+            <div ng-repeat="category in getFilteredCategoriesForSubject(subject)" class="mb-6 ml-1 sm:ml-2">
+                
+                <!-- Category Subheader -->
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 border-b border-slate-200/60 pb-1" ng-bind="category"></h3>
+                
+                <!-- LAYER 3: Resource Cards Grid directly under Category Header -->
+                <main class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-4">
+                    <div ng-repeat="res in subject.resources | filter:{category: category}:true" 
+                         class="flex flex-col justify-between bg-white border border-slate-200 rounded-xl p-4 shadow-sm"
+                         style="border-top: 3px solid {{res.theme || '#0ea5e9'}};">
+                        
+                        <div class="space-y-2">
+                            <h3 class="font-bold text-sm text-slate-800 leading-snug" ng-bind="res.name"></h3>
+                            <p class="text-slate-500 text-[11px] leading-relaxed whitespace-pre-line" ng-bind="res.description"></p>
+                        </div>
+
+                        <div class="mt-4 pt-3 border-t border-slate-100 flex flex-col space-y-2.5">
+                            <!-- Tags List -->
+                            <div class="flex flex-wrap gap-1" ng-if="res.tags">
+                                <button ng-repeat="tag in getTagsArray(res.tags)" 
+                                        ng-click="setTagFilter(tag)" 
+                                        class="px-1.5 py-0.5 rounded text-[9px] font-semibold transition-colors"
+                                        ng-class="selectedTagFilter.toLowerCase() === tag.toLowerCase() ? 'bg-sky-500 text-white border border-sky-500' : 'bg-slate-50 text-slate-500 border border-slate-150 hover:bg-slate-100 hover:text-slate-800'">
+                                    {{tag}}
+                                </button>
+                            </div>
+
+                            <!-- Action Items -->
+                            <div class="flex items-center justify-between">
+                                <span class="text-[10px] text-slate-400 flex items-center gap-1 select-none">
+                                    🔗 Link
+                                </span>
+                                <a href="{{res.url}}" target="_blank" rel="noopener noreferrer" 
+                                   class="px-2.5 py-1 rounded-md text-[10px] font-bold text-white flex items-center space-x-1"
+                                   style="background-color: {{res.theme || '#0ea5e9'}};">
+                                    <span>Launch</span>
+                                    <span class="text-xs font-normal">↗</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </div>
+
+        <!-- Zero Results Empty State -->
+        <div class="flex flex-col items-center justify-center py-16 text-center" ng-show="getMatchCount() === 0">
+            <div class="bg-slate-100 w-10 h-10 flex items-center justify-center rounded-full mb-3 text-sm select-none">
+                ❓
+            </div>
+            <h3 class="text-sm font-bold text-slate-800">No results</h3>
+            <p class="text-xs text-slate-500 max-w-xs mt-1">Refine your query or verify your server configuration.</p>
+        </div>
+
+    </div>
+
+    <!-- ANGULARJS CONTROLLER -->
+    <script>
+        const app = angular.module('mathApp', []);
+
+        app.controller('DirectoryController', ['$scope', '$http', function($scope, $http) {
+            
+            $scope.subjects = [];
+            $scope.selectedTagFilter = null;
+            $scope.searchQuery = '';
+            $scope.isSandbox = false;
+
+            // Extract standard URL query parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            $scope.targetSubjectParam = urlParams.get('subject'); // e.g., 'MTH' or 'PHY'
+
+            $scope.loadDirectoryData = function() {
+                // Determine database filename dynamically based on subject parameter
+                const dbFile = $scope.targetSubjectParam 
+                    ? 'db-' + $scope.targetSubjectParam.toUpperCase() + '.json' 
+                    : 'db.json';
+
+                $http.get(dbFile)
+                    .then(function(response) {
+                        let data = response.data;
+                        
+                        // Enforce array wrapping for strict parsing compatibility
+                        if (data && !angular.isArray(data)) {
+                            data = [data];
+                        }
+                        
+                        $scope.subjects = data || [];
+                        $scope.isSandbox = false;
+                    }, function(error) {
+                        $scope.subjects = [];
+                        $scope.isSandbox = true;
+                    });
+            };
+
+            // Dynamically yields the custom page title header
+            $scope.getPageTitle = function() {
+                if ($scope.targetSubjectParam && $scope.subjects && $scope.subjects.length > 0) {
+                    const matched = $scope.subjects.find(s => s.subject_alias.toLowerCase() === $scope.targetSubjectParam.toLowerCase());
+                    if (matched) {
+                        return matched.subject_name;
+                    }
+                }
+                return "Academic Resources";
+            };
+
+            $scope.getTagsArray = function(tagsStr) {
+                if (!tagsStr) return [];
+                return tagsStr.split(',').map(t => t.trim()).filter(Boolean);
+            };
+
+            // Custom multi-level deep filtering logic for the nested database hierarchy
+            $scope.getFilteredSubjects = function() {
+                if (!$scope.subjects) return [];
+                
+                const filteredSubjects = [];
+                const query = ($scope.searchQuery || '').trim().toLowerCase();
+                
+                $scope.subjects.forEach(subj => {
+                    // Ignore non-matching subjects if single subject parameter is configured
+                    if ($scope.targetSubjectParam && subj.subject_alias.toLowerCase() !== $scope.targetSubjectParam.toLowerCase()) {
+                        return;
+                    }
+
+                    const matchingResources = (subj.resources || []).filter(res => {
+                        const matchesSearch = !query || (
+                            (res.name && res.name.toLowerCase().includes(query)) ||
+                            (res.description && res.description.toLowerCase().includes(query)) ||
+                            (res.tags && res.tags.toLowerCase().includes(query)) ||
+                            (res.category && res.category.toLowerCase().includes(query)) ||
+                            (subj.subject_name && subj.subject_name.toLowerCase().includes(query)) ||
+                            (subj.subject_alias && subj.subject_alias.toLowerCase().includes(query))
+                        );
+
+                        const matchesTag = !$scope.selectedTagFilter || (
+                            res.tags && res.tags.toLowerCase().split(',').map(t => t.trim()).includes($scope.selectedTagFilter.toLowerCase())
+                        );
+
+                        return matchesSearch && matchesTag;
+                    });
+
+                    if (matchingResources.length > 0) {
+                        filteredSubjects.push({
+                            subject_alias: subj.subject_alias,
+                            subject_name: subj.subject_name,
+                            resources: matchingResources
+                        });
+                    }
+                });
+                return filteredSubjects;
+            };
+
+            // Returns unique categories found in the pre-filtered resource cards of a subject
+            $scope.getFilteredCategoriesForSubject = function(subject) {
+                const categories = [];
+                if (!subject || !subject.resources) return [];
+                subject.resources.forEach(res => {
+                    const cat = res.category || 'Other';
+                    if (categories.indexOf(cat) === -1) {
+                        categories.push(cat);
+                    }
+                });
+                return categories;
+            };
+
+            // Calculate the total matching resources count
+            $scope.getMatchCount = function() {
+                let count = 0;
+                const filtered = $scope.getFilteredSubjects();
+                filtered.forEach(subj => {
+                    count += subj.resources.length;
+                });
+                return count;
+            };
+
+            $scope.setTagFilter = function(tag) {
+                $scope.selectedTagFilter = tag;
+            };
+
+            $scope.clearTagFilter = function() {
+                $scope.selectedTagFilter = null;
+            };
+
+            $scope.loadDirectoryData();
+        }]);
+    </script>
+</body>
+</html>
