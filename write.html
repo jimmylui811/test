@@ -35,7 +35,7 @@
                 <span class="inline-flex items-center px-2.5 py-1.5 rounded-full text-xs font-semibold border"
                       ng-class="isSandbox ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'">
                     <span class="w-1.5 h-1.5 mr-1.5 rounded-full" ng-class="isSandbox ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500 animate-pulse'"></span>
-                    <span ng-bind="isSandbox ? 'Sandbox (Local Storage)' : 'Server Synced (directory_structure.json)'"></span>
+                    <span ng-bind="isSandbox ? 'Sandbox (Local Storage)' : 'Server Synced (db.json)'"></span>
                 </span>
             </div>
         </div>
@@ -157,7 +157,7 @@
                 <!-- Database operations & Raw Output Area -->
                 <div class="bg-slate-900 text-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
                     <div class="flex justify-between items-center">
-                        <h4 class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Database Preview: directory_structure.json</h4>
+                        <h4 class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Database Preview: db.json</h4>
                         
                         <div class="flex items-center space-x-2">
                             <button ng-click="copyJson()" class="px-2.5 py-1 text-[10px] font-bold bg-slate-800 hover:bg-slate-700 text-white rounded transition-colors">
@@ -246,7 +246,7 @@
             // Local fallback routine if API endpoint is down/offline
             $scope.loadFromLocalStorage = function() {
                 $scope.isSandbox = true;
-                const localData = localStorage.getItem('directory_structure');
+                const localData = localStorage.getItem('db');
                 if (localData) {
                     try {
                         $scope.resources = JSON.parse(localData);
@@ -264,11 +264,11 @@
                 $scope.syncTextarea();
                 
                 // Keep LocalStorage updated as local device backup
-                localStorage.setItem('directory_structure', JSON.stringify($scope.resources));
+                localStorage.setItem('db', JSON.stringify($scope.resources));
 
                 $http.post('/api/resources', $scope.resources)
                     .then(function(response) {
-                        $scope.showNotification("Database synchronized and written to directory_structure.json!");
+                        $scope.showNotification("Database synchronized and written to db.json!");
                         $scope.isSandbox = false;
                     }, function(error) {
                         $scope.showNotification("Saved locally in cache. Setup server connection to write to file.", true);
@@ -344,7 +344,7 @@
                     const parsed = JSON.parse($scope.rawJson);
                     if (angular.isArray(parsed)) {
                         $scope.resources = parsed;
-                        localStorage.setItem('directory_structure', JSON.stringify($scope.resources));
+                        localStorage.setItem('db', JSON.stringify($scope.resources));
                         $scope.showNotification("JSON edits parsed in memory. Click any Action to write.");
                     }
                 } catch(e) {
@@ -364,16 +364,16 @@
                 }
             };
 
-            // Trigger physical download of directory_structure.json configuration file
+            // Trigger physical download of db.json configuration file
             $scope.downloadJson = function() {
                 const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify($scope.resources, null, 2));
                 const downloadAnchor = document.createElement('a');
                 downloadAnchor.setAttribute("href", dataStr);
-                downloadAnchor.setAttribute("download", "directory_structure.json");
+                downloadAnchor.setAttribute("download", "db.json");
                 document.body.appendChild(downloadAnchor);
                 downloadAnchor.click();
                 downloadAnchor.remove();
-                $scope.showNotification("Downloaded directory_structure.json!");
+                $scope.showNotification("Downloaded db.json!");
             };
 
             // Handle uploading a local JSON file directly to replace values
