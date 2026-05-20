@@ -226,7 +226,7 @@
 
             // Main Load routine attempting server connect first
             $scope.loadData = function() {
-                $http.get('/api/resources')
+                $http.get('/')
                     .then(function(response) {
                         if (angular.isArray(response.data)) {
                             $scope.resources = response.data;
@@ -266,7 +266,7 @@
                 // Keep LocalStorage updated as local device backup
                 localStorage.setItem('db', JSON.stringify($scope.resources));
 
-                $http.post('/api/resources', $scope.resources)
+                $http.post('/', $scope.resources)
                     .then(function(response) {
                         $scope.showNotification("Database synchronized and written to db.json!");
                         $scope.isSandbox = false;
