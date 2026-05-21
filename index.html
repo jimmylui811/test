@@ -31,7 +31,7 @@
                 <span class="inline-flex items-center px-2.5 py-1.5 rounded-full text-[10px] sm:text-xs font-semibold border transition-all duration-300"
                       ng-class="isSandbox ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'">
                     <span class="w-1.5 h-1.5 mr-1.5 rounded-full" ng-class="isSandbox ? 'bg-amber-500' : 'bg-emerald-500 animate-pulse'"></span>
-                    <span ng-bind="isSandbox ? 'Sandbox (Offline/Error)' : 'Server Synced'"></span>
+                    <span ng-bind="isSandbox ? 'Offline / Sandbox' : 'Server Synced'"></span>
                 </span>
             </div>
         </div>
@@ -54,13 +54,13 @@
                 </div>
 
                 <div class="text-xs text-slate-500 font-medium">
-                    Found <span class="font-bold text-slate-800" ng-bind="getMatchCount()">0</span> resources
+                    Found <span class="font-bold text-slate-800" ng-bind="matchCount">0</span> resources
                 </div>
             </div>
         </div>
 
         <!-- LAYER 1 (Outermost): Grouped dynamically by Subject -->
-        <div ng-repeat="subject in getFilteredSubjects()" class="mb-10 animate-fade-in">
+        <div ng-repeat="subject in filteredSubjects" class="mb-10 animate-fade-in">
             
             <!-- Subject Header (only displays if viewing all subjects to keep single-subject views clean) -->
             <div ng-if="!targetSubjectParam" class="flex items-center gap-2 mb-4 bg-slate-100/80 p-3 rounded-xl border border-slate-200/50">
@@ -115,7 +115,7 @@
         </div>
 
         <!-- Zero Results Empty State -->
-        <div class="flex flex-col items-center justify-center py-16 text-center" ng-show="getMatchCount() === 0">
+        <div class="flex flex-col items-center justify-center py-16 text-center" ng-show="matchCount === 0">
             <div class="bg-slate-100 w-10 h-10 flex items-center justify-center rounded-full mb-3 text-sm select-none">
                 ❓
             </div>
@@ -132,16 +132,18 @@
         app.controller('DirectoryController', ['$scope', '$http', function($scope, $http) {
             
             $scope.subjects = [];
+            $scope.filteredSubjects = [];
+            $scope.matchCount = 0;
             $scope.selectedTagFilter = null;
             $scope.searchQuery = '';
             $scope.isSandbox = false;
 
             // Extract standard URL query parameters
             const urlParams = new URLSearchParams(window.location.search);
-            $scope.targetSubjectParam = urlParams.get('subject'); // e.g., 'MTH' or 'PHY'
+            $scope.targetSubjectParam = urlParams.get('subject'); // e.g., 'mth' or 'phy'
 
             $scope.loadDirectoryData = function() {
-                // Determine database filename dynamically based on subject parameter
+                // Determine database filename dynamically based on subject parameter and format it in lower case
                 const dbFile = $scope.targetSubjectParam 
                     ? 'db-' + $scope.targetSubjectParam.toLowerCase() + '.json' 
                     : 'db.json';
@@ -163,10 +165,10 @@
                     });
             };
 
-            // Dynamically yields the custom page title header
+            // Dynamically yields the custom page title header (with fallback checks)
             $scope.getPageTitle = function() {
                 if ($scope.targetSubjectParam && $scope.subjects && $scope.subjects.length > 0) {
-                    const matched = $scope.subjects.find(s => s.subject_alias.toLowerCase() === $scope.targetSubjectParam.toLowerCase());
+                    const matched = $scope.subjects.find(s => s && s.subject_alias && s.subject_alias.toLowerCase() === $scope.targetSubjectParam.toLowerCase());
                     if (matched) {
                         return matched.subject_name;
                     }
@@ -179,27 +181,39 @@
                 return tagsStr.split(',').map(t => t.trim()).filter(Boolean);
             };
 
-            // Custom multi-level deep filtering logic for the nested database hierarchy
-            $scope.getFilteredSubjects = function() {
-                if (!$scope.subjects) return [];
+            // Recalculates matching elements safely without triggering angular digest exceptions
+            $scope.updateFilteredData = function() {
+                if (!$scope.subjects) {
+                    $scope.filteredSubjects = [];
+                    $scope.matchCount = 0;
+                    return;
+                }
                 
-                const filteredSubjects = [];
+                const result = [];
+                let totalMatches = 0;
                 const query = ($scope.searchQuery || '').trim().toLowerCase();
                 
                 $scope.subjects.forEach(subj => {
+                    if (!subj) return;
+                    
+                    const subjAlias = subj.subject_alias || '';
+                    const subjName = subj.subject_name || '';
+
                     // Ignore non-matching subjects if single subject parameter is configured
-                    if ($scope.targetSubjectParam && subj.subject_alias.toLowerCase() !== $scope.targetSubjectParam.toLowerCase()) {
+                    if ($scope.targetSubjectParam && subjAlias.toLowerCase() !== $scope.targetSubjectParam.toLowerCase()) {
                         return;
                     }
 
                     const matchingResources = (subj.resources || []).filter(res => {
+                        if (!res) return false;
+                        
                         const matchesSearch = !query || (
                             (res.name && res.name.toLowerCase().includes(query)) ||
                             (res.description && res.description.toLowerCase().includes(query)) ||
                             (res.tags && res.tags.toLowerCase().includes(query)) ||
                             (res.category && res.category.toLowerCase().includes(query)) ||
-                            (subj.subject_name && subj.subject_name.toLowerCase().includes(query)) ||
-                            (subj.subject_alias && subj.subject_alias.toLowerCase().includes(query))
+                            (subjName && subjName.toLowerCase().includes(query)) ||
+                            (subjAlias && subjAlias.toLowerCase().includes(query))
                         );
 
                         const matchesTag = !$scope.selectedTagFilter || (
@@ -210,15 +224,23 @@
                     });
 
                     if (matchingResources.length > 0) {
-                        filteredSubjects.push({
-                            subject_alias: subj.subject_alias,
-                            subject_name: subj.subject_name,
+                        result.push({
+                            subject_alias: subjAlias,
+                            subject_name: subjName,
                             resources: matchingResources
                         });
+                        totalMatches += matchingResources.length;
                     }
                 });
-                return filteredSubjects;
+
+                $scope.filteredSubjects = result;
+                $scope.matchCount = totalMatches;
             };
+
+            // Watch filters and database array; run recalculation exactly once per change
+            $scope.$watchGroup(['searchQuery', 'selectedTagFilter', 'subjects'], function() {
+                $scope.updateFilteredData();
+            });
 
             // Returns unique categories found in the pre-filtered resource cards of a subject
             $scope.getFilteredCategoriesForSubject = function(subject) {
@@ -231,18 +253,6 @@
                     }
                 });
                 return categories;
-            };
-
-            // Calculate the total matching resources count using the actively filtered dataset
-            $scope.getMatchCount = function() {
-                let count = 0;
-                const filtered = $scope.getFilteredSubjects();
-                filtered.forEach(subj => {
-                    if (subj.resources) {
-                        count += subj.resources.length;
-                    }
-                });
-                return count;
             };
 
             $scope.setTagFilter = function(tag) {
