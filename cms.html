@@ -302,11 +302,13 @@
 
             // Extract standard URL query parameters
             const urlParams = new URLSearchParams(window.location.search);
-            $scope.targetSubjectParam = urlParams.get('subject'); // e.g., 'mth' or 'phy'
+            $scope.targetSubjectParam = urlParams.get('subj'); // e.g., 'mth' or 'phy'
+
+            const externalBaseUrl = '';
 
             // Computes filename for writing operations dynamically (strictly lowercase files)
             $scope.getCurrentDbFilename = function() {
-                return $scope.targetSubjectParam 
+                return externalBaseUrl + $scope.targetSubjectParam 
                     ? 'db-' + $scope.targetSubjectParam.toLowerCase() + '.json' 
                     : 'db.json';
             };
@@ -442,6 +444,10 @@
                     .then(function(response) {
                         $scope.showNotification("Saved and synchronized with " + dbFile + "!");
                         $scope.isSandbox = false;
+                        // Reload page after a brief 1-second delay so the user can read the success message
+                        $timeout(function() {
+                            window.location.reload();
+                        }, 1000);
                     }, function(error) {
                         $scope.showNotification("Saved changes locally. Verify backend connection to write.", true);
                     });
@@ -563,15 +569,31 @@
 
             // Execute Delete logic once confirmed inside modal
             $scope.executeDelete = function() {
-                const subject = $scope.deleteConfirmModal.subject;
+                const subjectCopy = $scope.deleteConfirmModal.subject;
                 const resource = $scope.deleteConfirmModal.resource;
 
-                if (subject && subject.resources && resource) {
-                    const index = subject.resources.indexOf(resource);
-                    if (index !== -1) {
-                        subject.resources.splice(index, 1);
-                        $scope.showNotification("Resource deleted successfully!");
-                        $scope.saveDatabaseState();
+                if (subjectCopy && resource) {
+                    // Find the true original subject in the master database array using subject_alias matching
+                    const trueSubject = $scope.subjects.find(function(s) {
+                        return s && s.subject_alias && s.subject_alias.toUpperCase() === (subjectCopy.subject_alias || '').toUpperCase();
+                    });
+
+                    if (trueSubject && trueSubject.resources) {
+                        // Use findIndex with property matching to avoid fragile object reference identity failures
+                        const index = trueSubject.resources.findIndex(function(r) {
+                            return r && r.name === resource.name && r.url === resource.url;
+                        });
+
+                        if (index !== -1) {
+                            // Splice from the actual master list reference
+                            trueSubject.resources.splice(index, 1);
+                            $scope.showNotification("Resource deleted successfully!");
+                            $scope.saveDatabaseState();
+                        } else {
+                            $scope.showNotification("Error: Resource reference not found in database.", true);
+                        }
+                    } else {
+                        $scope.showNotification("Error: Target database subject structure not found.", true);
                     }
                 }
                 $scope.cancelDelete();

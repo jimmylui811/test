@@ -140,17 +140,17 @@
 
             // Extract standard URL query parameters
             const urlParams = new URLSearchParams(window.location.search);
-            $scope.targetSubjectParam = urlParams.get('subject'); // e.g., 'mth' or 'phy'
+            $scope.targetSubjectParam = urlParams.get('subj'); // e.g., 'mth' or 'phy'
 
-            const externalBaseUrl = 'http://aws.jimmylui.org/';
+            const externalBaseUrl = '';
 
             $scope.loadDirectoryData = function() {
                 // Determine database filename dynamically based on subject parameter and format it in lower case
-                const dbFile = $scope.targetSubjectParam 
+                const dbFile = externalBaseUrl + $scope.targetSubjectParam 
                     ? 'db-' + $scope.targetSubjectParam.toLowerCase() + '.json' 
                     : 'db.json';
 
-                $http.get(externalBaseUrl + dbFile)
+                $http.get(dbFile)
                     .then(function(response) {
                         let data = response.data;
                         
