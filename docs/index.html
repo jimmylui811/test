@@ -142,13 +142,15 @@
             const urlParams = new URLSearchParams(window.location.search);
             $scope.targetSubjectParam = urlParams.get('subject'); // e.g., 'mth' or 'phy'
 
+            const externalBaseUrl = 'https://your-public-accessed-website.com/data/';
+
             $scope.loadDirectoryData = function() {
                 // Determine database filename dynamically based on subject parameter and format it in lower case
                 const dbFile = $scope.targetSubjectParam 
                     ? 'db-' + $scope.targetSubjectParam.toLowerCase() + '.json' 
                     : 'db.json';
 
-                $http.get(dbFile)
+                $http.get(externalBaseUrl + dbFile)
                     .then(function(response) {
                         let data = response.data;
                         
