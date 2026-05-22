@@ -19,108 +19,125 @@
 
     <!-- Main Container -->
     <div class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1">
-
-        <!-- Header Block with Dynamic Title & Status Badge -->
-        <div class="mb-6 pb-4 border-b border-slate-200 flex items-center justify-between gap-4">
-            <h1 class="text-2xl font-bold tracking-tight text-slate-900" ng-bind="getPageTitle()">
-                Academic Resources
-            </h1>
+        <!-- STICKY HEADER WRAPPER -->
+        <div class="sticky top-0 z-30 bg-slate-50/95 backdrop-blur-md pt-6 pb-4 border-b border-slate-200 mb-6">
             
-            <!-- Connection Status Badge -->
-            <div class="flex items-center shrink-0">
-                <span class="inline-flex items-center px-2.5 py-1.5 rounded-full text-[10px] sm:text-xs font-semibold border transition-all duration-300"
-                      ng-class="isSandbox ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'">
-                    <span class="w-1.5 h-1.5 mr-1.5 rounded-full" ng-class="isSandbox ? 'bg-amber-500' : 'bg-emerald-500 animate-pulse'"></span>
-                    <span ng-bind="isSandbox ? 'Offline / Sandbox' : 'Server Synced'"></span>
-                </span>
-            </div>
-        </div>
-
-        <!-- Filter & Search Panel -->
-        <div class="flex flex-col md:flex-row gap-4 justify-between items-stretch md:items-center bg-white p-3 rounded-xl border border-slate-200 mb-6">
-            <div class="relative flex-1 max-w-lg">
-                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs select-none">🔍</span>
-                <input type="text" ng-model="searchQuery" placeholder="Search resources..." 
-                       class="w-full pl-8 pr-4 py-2 rounded-lg border border-slate-200 bg-slate-50 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-sky-500 text-xs">
-            </div>
-            
-            <div class="flex items-center gap-3">
-                <!-- Active tag filter indication -->
-                <div class="flex items-center space-x-1.5 text-xs font-semibold bg-slate-100 px-2 py-1 rounded-md text-slate-600" ng-show="selectedTagFilter">
-                    <span>Tag: <span class="text-sky-600 font-bold" ng-bind="selectedTagFilter"></span></span>
-                    <button ng-click="clearTagFilter()" class="hover:text-red-500 transition-colors font-bold text-sm leading-none pb-0.5">
-                        &times;
-                    </button>
-                </div>
-
-                <div class="text-xs text-slate-500 font-medium">
-                    Found <span class="font-bold text-slate-800" ng-bind="matchCount">0</span> resources
-                </div>
-            </div>
-        </div>
-
-        <!-- LAYER 1 (Outermost): Grouped dynamically by Subject -->
-        <div ng-repeat="subject in filteredSubjects" class="mb-10 animate-fade-in">
-            
-            <!-- Subject Header (only displays if viewing all subjects to keep single-subject views clean) -->
-            <div ng-if="!targetSubjectParam" class="flex items-center gap-2 mb-4 bg-slate-100/80 p-3 rounded-xl border border-slate-200/50">
-                <span class="bg-slate-800 text-white text-[10px] tracking-wider font-mono font-bold px-2 py-1 rounded" ng-bind="subject.subject_alias"></span>
-                <h2 class="text-sm font-bold text-slate-900" ng-bind="subject.subject_name"></h2>
-            </div>
-            
-            <!-- LAYER 2: Grouped by Category under Subject -->
-            <div ng-repeat="category in getFilteredCategoriesForSubject(subject)" class="mb-6 ml-1 sm:ml-2">
-                
-                <!-- Category Subheader -->
-                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 border-b border-slate-200/60 pb-1" ng-bind="category"></h3>
-                
-                <!-- LAYER 3: Resource Cards Grid directly under Category Header -->
-                <main class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-4">
-                    <div ng-repeat="res in subject.resources | filter:{category: category}:true" 
-                         class="flex flex-col justify-between bg-white border border-slate-200 rounded-xl p-4 shadow-sm"
-                         style="border-top: 3px solid {{res.theme || '#0ea5e9'}};">
-                        
-                        <div class="space-y-2">
-                            <h3 class="font-bold text-sm text-slate-800 leading-snug" ng-bind="res.name"></h3>
-                            <p class="text-slate-500 text-[11px] leading-relaxed whitespace-pre-line" ng-bind="res.description"></p>
-                        </div>
-
-                        <div class="mt-4 pt-3 border-t border-slate-100 flex flex-col space-y-2.5">
-                            <!-- Tags List -->
-                            <div class="flex flex-wrap gap-1" ng-if="res.tags">
-                                <button ng-repeat="tag in getTagsArray(res.tags)" 
-                                        ng-click="setTagFilter(tag)" 
-                                        class="px-1.5 py-0.5 rounded text-[9px] font-semibold transition-colors"
-                                        ng-class="selectedTagFilter.toLowerCase() === tag.toLowerCase() ? 'bg-sky-500 text-white border border-sky-500' : 'bg-slate-50 text-slate-500 border border-slate-150 hover:bg-slate-100 hover:text-slate-800'">
-                                    {{tag}}
-                                </button>
-                            </div>
-
-                            <!-- Action Items -->
-                            <div class="flex items-center justify-between">
-                                <span class="text-[10px] text-slate-400 flex items-center gap-1 select-none">
-                                    🔗 Link
-                                </span>
-                                <a href="{{res.url}}" target="_blank" rel="noopener noreferrer" 
-                                   class="px-2.5 py-1 rounded-md text-[10px] font-bold text-white flex items-center space-x-1"
-                                   style="background-color: {{res.theme || '#0ea5e9'}};">
-                                    <span>Launch</span>
-                                    <span class="text-xs font-normal">↗</span>
-                                </a>
-                            </div>
-                        </div>
+            <!-- Header Block with Dynamic Title & Status Badge -->
+            <div class="mb-4 pb-4 border-b border-slate-200/60 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="bg-indigo-600 text-white text-[10px] tracking-wider font-mono font-bold px-2 py-0.5 rounded shadow-sm">CMS MODE</span>
+                        <h1 class="text-2xl font-bold tracking-tight text-slate-900" ng-bind="getPageTitle()">
+                            Academic Resources
+                        </h1>
                     </div>
-                </main>
+                </div>
+                
+                <!-- Control Actions & Sync Status -->
+                <div class="flex items-center gap-2 shrink-0">
+                    <span class="inline-flex items-center px-2.5 py-1.5 rounded-full text-[10px] sm:text-xs font-semibold border transition-all duration-300"
+                          ng-class="isSandbox ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'">
+                        <span class="w-1.5 h-1.5 mr-1.5 rounded-full" ng-class="isSandbox ? 'bg-amber-500' : 'bg-emerald-500 animate-pulse'"></span>
+                        <span ng-bind="isSandbox ? 'Offline / Sandbox' : 'Synced'"></span>
+                    </span>
+                </div>
+            </div>
+
+
+            <!-- Filter & Search Panel -->
+            <div class="flex flex-col md:flex-row gap-4 justify-between items-stretch md:items-center bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+                <div class="relative flex-1 max-w-lg">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs select-none">🔍</span>
+                    <input type="text" ng-model="searchQuery" placeholder="Search resources..." 
+                           class="w-full pl-8 pr-4 py-2 rounded-lg border border-slate-200 bg-slate-50 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-xs">
+                </div>
+                
+                <div class="flex items-center gap-3">
+                    <!-- Active tag filter indication -->
+                    <div class="flex items-center space-x-1.5 text-xs font-semibold bg-slate-100 px-2 py-1 rounded-md text-slate-600" ng-show="selectedTagFilter">
+                        <span>Tag: <span class="text-sky-600 font-bold" ng-bind="selectedTagFilter"></span></span>
+                        <button ng-click="clearTagFilter()" class="hover:text-red-500 transition-colors font-bold text-sm leading-none pb-0.5">
+                            &times;
+                        </button>
+                    </div>
+
+                    <div class="text-xs text-slate-500 font-medium">
+                        Found <span class="font-bold text-slate-800" ng-bind="matchCount">0</span> resources
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- Zero Results Empty State -->
-        <div class="flex flex-col items-center justify-center py-16 text-center" ng-show="matchCount === 0">
-            <div class="bg-slate-100 w-10 h-10 flex items-center justify-center rounded-full mb-3 text-sm select-none">
-                ❓
+        <!-- SCROLLABLE MAIN CONTENT -->
+        <div class="pb-12">
+            <!-- LAYER 1 (Outermost): Grouped dynamically by Subject -->
+            <div ng-repeat="subject in filteredSubjects" class="mb-10 animate-fade-in">
+                
+                <!-- Subject Header (displays only if viewing all subjects globally) -->
+                <div ng-if="!targetSubjectParam" class="flex items-center gap-2 mb-4 bg-slate-100/80 p-3 rounded-xl border border-slate-200/50">
+                    <span class="bg-slate-800 text-white text-[10px] tracking-wider font-mono font-bold px-2 py-1 rounded" ng-bind="subject.subject_alias"></span>
+                    <h2 class="text-sm font-bold text-slate-900" ng-bind="subject.subject_name"></h2>
+                </div>
+                
+                <!-- LAYER 2: Grouped by Category under Subject -->
+                <div ng-repeat="category in getFilteredCategoriesForSubject(subject)" class="mb-6 ml-1 sm:ml-2">
+                    
+                    <!-- Category Subheader -->
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 border-b border-slate-200/60 pb-1" ng-bind="category"></h3>
+                    
+                    <!-- LAYER 3: Resource Cards Grid directly under Category Header -->
+                    <main class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-4">
+                        
+                        <!-- Resource Cards -->
+                        <div ng-repeat="res in subject.resources | filter:{category: category}:true" 
+                             class="flex flex-col justify-between bg-white border border-slate-200 rounded-xl p-4 shadow-sm animate-fade-in"
+                             style="border-top: 3px solid {{res.theme || '#0ea5e9'}};">
+                            
+                            <div class="space-y-2">
+                                <div class="flex justify-between items-start gap-2">
+                                    <h3 class="font-bold text-sm text-slate-800 leading-snug" ng-bind="res.name"></h3>
+                                </div>
+                                <p class="text-slate-500 text-[11px] leading-relaxed whitespace-pre-line" ng-bind="res.description"></p>
+                            </div>
+
+                            <div class="mt-4 pt-3 border-t border-slate-100 flex flex-col space-y-2.5">
+                                <!-- Tags List -->
+                                <div class="flex flex-wrap gap-1" ng-if="res.tags">
+                                    <span ng-repeat="tag in getTagsArray(res.tags)" 
+                                          class="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-slate-50 text-slate-500 border border-slate-150">
+                                        {{tag}}
+                                    </span>
+                                </div>
+
+                                <!-- Interactive CMS Actions footer -->
+                                <div class="flex items-center justify-between pt-1">
+                                    <div class="flex items-center gap-1.5">
+                                        <button ng-click="openEditModal(subject, res)" class="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded transition-colors">
+                                            ✏️ Edit
+                                        </button>
+                                        <button ng-click="confirmDelete(subject, res)" class="text-[10px] font-bold text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 px-2 py-1 rounded transition-colors">
+                                            🗑 Delete
+                                        </button>
+                                    </div>
+                                    <a href="{{res.url}}" target="_blank" rel="noopener noreferrer" 
+                                       class="px-2 py-1 rounded text-[9px] font-bold text-slate-400 hover:text-slate-600 bg-slate-100 transition-colors">
+                                        Link ↗
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </main>
+                </div>
             </div>
-            <h3 class="text-sm font-bold text-slate-800">No results</h3>
-            <p class="text-xs text-slate-500 max-w-xs mt-1">Refine your query or verify your server configuration.</p>
+
+            <!-- Zero Results Empty State -->
+            <div class="flex flex-col items-center justify-center py-16 text-center" ng-show="matchCount === 0">
+                <div class="bg-slate-100 w-10 h-10 flex items-center justify-center rounded-full mb-3 text-sm select-none">
+                    ❓
+                </div>
+                <h3 class="text-sm font-bold text-slate-800">No results</h3>
+                <p class="text-xs text-slate-500 max-w-xs mt-1">Specify a valid subject query parameter (e.g., <code class="bg-slate-200 px-1 rounded">?subj=mth</code>) or check your server configuration.</p>
+            </div>
         </div>
 
     </div>
